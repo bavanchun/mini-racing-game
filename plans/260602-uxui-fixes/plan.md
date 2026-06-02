@@ -1,7 +1,7 @@
 ---
 title: "UX/UI Fixes — Mini Racing Game"
 description: ""
-status: in_progress
+status: done
 priority: P2
 branch: "main"
 tags: []
@@ -50,7 +50,7 @@ files). Phase 5 integrates, analyzes, tests, and visually verifies on the emulat
 | 2 | [Betting Screen](./phase-02-betting-screen.md) | Done |
 | 3 | [Race Screen](./phase-03-race-screen.md) | Done |
 | 4 | [Result Screen](./phase-04-result-screen.md) | Done |
-| 5 | [Integration & Verification](./phase-05-integration-verification.md) | In progress (code/build/test green; on-device visual pass pending) |
+| 5 | [Integration & Verification](./phase-05-integration-verification.md) | Done (analyze/test/build green; all findings verified on Pixel 8 emulator) |
 
 ## Dependencies
 
