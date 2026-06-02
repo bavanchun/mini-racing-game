@@ -3,6 +3,9 @@ import 'package:flutter/material.dart';
 import '../models/game_state.dart';
 import '../utils/constants.dart';
 import '../theme/app_theme.dart';
+import '../services/sound_service.dart';
+import '../services/wallet_storage.dart';
+import '../widgets/app_background.dart';
 import '../widgets/bet_row.dart';
 import 'race_screen.dart';
 
@@ -77,13 +80,15 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> {
   /// Launch the race, then refresh state when control returns to this screen.
   /// The `await` means we wait for the full Race + Result flow to pop back here.
   Future<void> _startRace() async {
+    SoundService.playStart(); // race-start cue (fire-and-forget)
     await Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => RaceScreen(game: widget.game)),
     );
     // RaceScreen calls settleRace and ResultScreen pops back to us.
-    // Refresh wallet balance and cleared bets after settling.
+    // Refresh wallet balance and cleared bets after settling, then persist.
     if (mounted) setState(() {});
+    WalletStorage.saveMoney(widget.game.money);
   }
 
   // ── reset wallet ──────────────────────────────────────────────────────────
@@ -95,13 +100,14 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> {
       widget.game.money = GameConfig.startingMoney;
       widget.game.clearBets();
     });
+    WalletStorage.saveMoney(widget.game.money);
   }
 
   // ── build ─────────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return GradientScaffold(
       appBar: AppBar(
         title: const Text('🐎 Place Your Bets'),
       ),

@@ -8,7 +8,9 @@ import 'package:mini_racing_game/utils/constants.dart';
 void main() {
   testWidgets('app launches on the betting screen with the starting wallet',
       (WidgetTester tester) async {
-    await tester.pumpWidget(const MiniRacingGameApp());
+    await tester.pumpWidget(
+      const MiniRacingGameApp(initialMoney: GameConfig.startingMoney),
+    );
 
     // Starting wallet is shown.
     expect(find.textContaining('${GameConfig.startingMoney}'), findsWidgets);

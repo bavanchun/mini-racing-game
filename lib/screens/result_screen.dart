@@ -1,17 +1,36 @@
 import 'package:flutter/material.dart';
 
 import '../models/game_state.dart';
+import '../services/sound_service.dart';
 import '../theme/app_theme.dart';
+import '../widgets/app_background.dart';
 import '../widgets/result_bet_table.dart';
 
 /// Displays the final standings and payout breakdown after a race.
 ///
-/// Purely presentational — receives an immutable [RaceOutcome] that was
-/// already settled by the Race screen. Never calls [GameState.settleRace].
-class ResultScreen extends StatelessWidget {
+/// Receives an immutable [RaceOutcome] that was already settled by the Race
+/// screen — it never calls [GameState.settleRace]. It is a StatefulWidget only
+/// so it can play the win/lose sound cue once when first shown.
+class ResultScreen extends StatefulWidget {
   final RaceOutcome outcome;
 
   const ResultScreen({super.key, required this.outcome});
+
+  @override
+  State<ResultScreen> createState() => _ResultScreenState();
+}
+
+class _ResultScreenState extends State<ResultScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Play the appropriate cue once, based on whether the player won.
+    if (widget.outcome.didWin) {
+      SoundService.playWin();
+    } else {
+      SoundService.playLose();
+    }
+  }
 
   /// Both navigation actions pop back to the Home screen (the first route).
   void _goHome(BuildContext context) {
@@ -20,7 +39,8 @@ class ResultScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    final outcome = widget.outcome;
+    return GradientScaffold(
       appBar: AppBar(
         title: const Text('Race Results'),
         automaticallyImplyLeading: false,

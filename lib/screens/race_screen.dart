@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../models/game_state.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
+import '../widgets/app_background.dart';
 import '../widgets/race_track.dart';
 import 'result_screen.dart';
 
@@ -137,7 +138,7 @@ class _RaceScreenState extends State<RaceScreen> {
             ? 'Racing...'
             : 'Get Ready...';
 
-    return Scaffold(
+    return GradientScaffold(
       appBar: AppBar(
         title: const Text(
           '🏇  Race',
