@@ -12,20 +12,25 @@ class AppBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF7EC8E3), // sky
-            Color(0xFFBFE3A0), // light turf
-            Color(0xFFEFE7D3), // cream
-          ],
-          stops: [0.0, 0.45, 1.0],
+    // SizedBox.expand forces the gradient to fill all available space even when
+    // the child is shorter than the screen, so the backdrop reaches edge-to-edge
+    // (including behind the transparent system nav bar — no black band).
+    return SizedBox.expand(
+      child: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color(0xFF7EC8E3), // sky
+              Color(0xFFBFE3A0), // light turf
+              Color(0xFFEFE7D3), // cream
+            ],
+            stops: [0.0, 0.45, 1.0],
+          ),
         ),
+        child: child,
       ),
-      child: child,
     );
   }
 }
@@ -40,10 +45,17 @@ class GradientScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      appBar: appBar,
-      body: AppBackground(child: body),
+    // The gradient sits BEHIND a transparent Scaffold (rather than inside its
+    // body) so it covers the entire window — including the region behind the
+    // bottom system nav bar. extendBody lets the body draw into that region too,
+    // so the cream gradient shows through instead of a black band.
+    return AppBackground(
+      child: Scaffold(
+        backgroundColor: Colors.transparent,
+        extendBody: true,
+        appBar: appBar,
+        body: body,
+      ),
     );
   }
 }
