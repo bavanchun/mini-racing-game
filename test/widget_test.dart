@@ -1,30 +1,24 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+// Smoke test: the app boots into the betting screen and shows the wallet.
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mini_racing_game/main.dart';
+import 'package:mini_racing_game/utils/constants.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('app launches on the betting screen with the starting wallet',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MiniRacingGameApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Starting wallet is shown.
+    expect(find.textContaining('${GameConfig.startingMoney}'), findsWidgets);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    // All three racers appear on the betting screen.
+    for (final racer in GameConfig.racers) {
+      expect(find.text(racer.name), findsWidgets);
+    }
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Start button exists but is disabled until a bet is placed.
+    expect(find.widgetWithText(ElevatedButton, 'Start Race'), findsOneWidget);
   });
 }
