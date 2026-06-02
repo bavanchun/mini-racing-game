@@ -45,13 +45,20 @@ class _RaceScreenState extends State<RaceScreen> {
     _progress = List<double>.filled(GameConfig.racers.length, 0.0);
 
     // Short countdown pause before the race begins — improves perceived polish.
-    Future.delayed(const Duration(milliseconds: 600), _startRace);
+    Future.delayed(RaceConfig.countdown, _startRace);
   }
 
   /// Kicks off the periodic timer that drives all racer positions forward.
+  ///
+  /// The extra setState after assigning the timer forces an immediate rebuild
+  /// so the status banner flips from "Get Ready…" to "Racing…" right away
+  /// instead of waiting for the first tick to trigger a rebuild.
   void _startRace() {
     if (!mounted) return;
     _timer = Timer.periodic(RaceConfig.tick, _onTick);
+    // Trigger an immediate rebuild so the banner reflects the running state
+    // without waiting for the first tick.
+    setState(() {});
   }
 
   /// Called every [RaceConfig.tick]. Advances every racer independently by a
@@ -101,24 +108,41 @@ class _RaceScreenState extends State<RaceScreen> {
   ///
   /// The `_finished` guard ensures this runs exactly once even if the timer
   /// fires again between cancel() and disposal.
-  void _onRaceFinished(int winnerId) {
+  ///
+  /// The method is async so we can insert a brief photo-finish pause after
+  /// highlighting the winner — giving the player a moment to see the result
+  /// before the screen transitions. Timer cancel and settleRace happen
+  /// synchronously first; only the navigation is deferred past the await.
+  Future<void> _onRaceFinished(int winnerId) async {
     _finished = true;
     _timer?.cancel();
     _timer = null;
 
     setState(() => _winnerId = winnerId);
 
-    final winner = GameConfig.racers[winnerId];
-    final outcome = widget.game.settleRace(winner);
+    // Build the full finishing order (descending progress; lowest id on tie)
+    // so the result screen can display a podium rather than just the winner.
+    final order = List<int>.generate(_progress.length, (i) => i)
+      ..sort((a, b) {
+        final c = _progress[b].compareTo(_progress[a]); // descending progress
+        return c != 0 ? c : a.compareTo(b); // lowest id wins a tie
+      });
 
-    // Always guard with mounted before using context after an async gap.
-    // Even though settleRace is synchronous, the setState above schedules a
-    // frame, so we may technically be between frames here.
+    final winner = GameConfig.racers[winnerId];
+    final outcome = widget.game.settleRace(winner, order);
+
+    // Brief pause so the winner highlight is visible before navigating — the
+    // UI already shows the gold border and WINNER label at this point.
+    await Future.delayed(RaceConfig.photoFinishDelay);
+
+    // Guard with mounted after every async gap before touching BuildContext.
     if (!mounted) return;
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => ResultScreen(outcome: outcome)),
+      MaterialPageRoute(
+        builder: (_) => ResultScreen(game: widget.game, outcome: outcome),
+      ),
     );
   }
 
@@ -222,14 +246,20 @@ class _StatusBanner extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: textColor.withValues(alpha: 0.4)),
       ),
-      child: Text(
-        text,
-        textAlign: TextAlign.center,
-        style: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.bold,
-          color: textColor,
-          letterSpacing: 0.5,
+      // liveRegion causes screen readers to announce the text whenever it
+      // changes, so visually impaired users hear "Racing…", then winner name.
+      child: Semantics(
+        liveRegion: true,
+        label: text,
+        child: Text(
+          text,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+            color: textColor,
+            letterSpacing: 0.5,
+          ),
         ),
       ),
     );

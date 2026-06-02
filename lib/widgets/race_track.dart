@@ -159,10 +159,15 @@ class RaceTrack extends StatelessWidget {
                       top: (_laneHeight - _horseSize) / 2,
                       width: _horseSize,
                       height: _horseSize,
-                      child: Center(
-                        child: Text(
-                          racer.emoji,
-                          style: const TextStyle(fontSize: 28),
+                      // Semantic label lets screen readers identify which racer
+                      // this glyph represents as it moves across the track.
+                      child: Semantics(
+                        label: racer.name,
+                        child: Center(
+                          child: Text(
+                            racer.emoji,
+                            style: const TextStyle(fontSize: 28),
+                          ),
                         ),
                       ),
                     ),

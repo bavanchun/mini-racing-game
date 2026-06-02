@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/game_state.dart';
 import '../utils/constants.dart';
+import '../utils/route_observer.dart';
 import '../theme/app_theme.dart';
 import '../services/sound_service.dart';
 import '../services/wallet_storage.dart';
@@ -14,6 +15,12 @@ import 'race_screen.dart';
 /// Owns a single mutable [GameState] instance passed from main.dart. After
 /// [RaceScreen] completes (via `await`), we call `setState` so the wallet
 /// balance and any cleared bets reflect the settled race outcome.
+///
+/// Also subscribes to [appRouteObserver] via [RouteAware] so that when the
+/// Result screen pops back (possibly after a "Play Again" repeat), `didPopNext`
+/// triggers a rebuild — reliably refreshing the wallet and repeated bets even
+/// if the `await` in `_startRace` already resolved earlier (which it does when
+/// Race is *replaced* by Result using pushReplacement).
 class HomeBettingScreen extends StatefulWidget {
   final GameState game;
 
@@ -23,9 +30,33 @@ class HomeBettingScreen extends StatefulWidget {
   State<HomeBettingScreen> createState() => _HomeBettingScreenState();
 }
 
-class _HomeBettingScreenState extends State<HomeBettingScreen> {
+class _HomeBettingScreenState extends State<HomeBettingScreen> with RouteAware {
   /// How many dollars each +/- button press changes a stake.
   static const int _step = 10;
+
+  /// Fixed amount added by the per-row quick-bet button.
+  static const int _quickBetAmount = 50;
+
+  // ── RouteAware lifecycle ──────────────────────────────────────────────────
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Subscribe so didPopNext fires when a screen on top of Home is popped.
+    appRouteObserver.subscribe(this, ModalRoute.of(context)! as PageRoute);
+  }
+
+  @override
+  void dispose() {
+    appRouteObserver.unsubscribe(this);
+    super.dispose();
+  }
+
+  /// Called when the screen that was pushed on top of this one pops back.
+  /// Rebuilds so the wallet balance and any "Play Again" repeated bets are
+  /// shown immediately, regardless of when the original `await` resolved.
+  @override
+  void didPopNext() => setState(() {});
 
   // ── helpers ───────────────────────────────────────────────────────────────
 
@@ -41,18 +72,14 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> {
   /// the player's wallet — silently clamping prevents over-betting without
   /// crashing. A SnackBar notifies the player when the ceiling is hit.
   void _increment(int racerId) {
-    final current = _stakeFor(racerId);
-    final headroom = widget.game.money - widget.game.totalBet;
-
+    final headroom = _headroom();
     if (headroom <= 0) {
-      // Wallet is already fully committed; tell the player.
       _showOverBetSnackBar();
       return;
     }
-
     final added = headroom < _step ? headroom : _step;
     setState(() {
-      widget.game.setBet(racerId, current + added);
+      widget.game.setBet(racerId, _stakeFor(racerId) + added);
     });
   }
 
@@ -64,6 +91,24 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> {
       widget.game.setBet(racerId, current - _step);
     });
   }
+
+  /// Add [_quickBetAmount] to the stake for [racerId], clamped to the same
+  /// wallet headroom rule as [_increment] — total bets can never exceed money.
+  void _quickBet(int racerId) {
+    final headroom = _headroom();
+    if (headroom <= 0) {
+      _showOverBetSnackBar();
+      return;
+    }
+    final added = headroom < _quickBetAmount ? headroom : _quickBetAmount;
+    setState(() {
+      widget.game.setBet(racerId, _stakeFor(racerId) + added);
+    });
+  }
+
+  /// How much money is still available to bet.
+  /// Extracted so both [_increment] and [_quickBet] share the exact same rule.
+  int _headroom() => widget.game.money - widget.game.totalBet;
 
   void _showOverBetSnackBar() {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -195,12 +240,29 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> {
               step: _step,
               onDecrement: () => _decrement(racer.id),
               onIncrement: () => _increment(racer.id),
+              onQuickBet: () => _quickBet(racer.id),
             ),
 
           const SizedBox(height: 16),
 
           // ── Summary card ───────────────────────────────────────────────
           _SummaryCard(totalBet: totalBet, remaining: _remaining),
+
+          // ── Clear All ─────────────────────────────────────────────────
+          // Lets the player wipe all stakes in one tap rather than
+          // decrementing every row individually.
+          if (totalBet > 0)
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton.icon(
+                onPressed: () => setState(() => widget.game.clearBets()),
+                icon: const Icon(Icons.clear_all, size: 18),
+                label: const Text('Clear All'),
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.lose,
+                ),
+              ),
+            ),
 
           const SizedBox(height: 24),
 

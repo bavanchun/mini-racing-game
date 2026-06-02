@@ -29,10 +29,19 @@ class RaceConfig {
   RaceConfig._();
 
   /// How often each racer advances. Lower = smoother but busier.
-  static const Duration tick = Duration(milliseconds: 120);
+  /// Shorter tick + smaller steps = a longer, smoothly gliding race.
+  static const Duration tick = Duration(milliseconds: 80);
 
   /// Minimum / maximum fraction of the track a racer can gain per tick.
   /// The random pick inside this range is what makes speeds differ.
-  static const double minStep = 0.010;
-  static const double maxStep = 0.055;
+  /// Avg ≈0.012 → ~83 ticks × 80ms ≈ 6.6s race.
+  static const double minStep = 0.006;
+  static const double maxStep = 0.018;
+
+  /// Pause after a winner is highlighted before navigating to the results, so
+  /// the photo-finish moment registers.
+  static const Duration photoFinishDelay = Duration(milliseconds: 1100);
+
+  /// Countdown pause before the race begins (was a magic number in the screen).
+  static const Duration countdown = Duration(milliseconds: 600);
 }

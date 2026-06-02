@@ -4,6 +4,7 @@ import '../models/game_state.dart';
 import '../models/racer.dart';
 import '../theme/app_theme.dart';
 import '../utils/constants.dart';
+import '../utils/formatting.dart';
 
 /// Renders the per-racer bet breakdown from a finished race.
 ///
@@ -113,11 +114,11 @@ class _BetRow extends StatelessWidget {
               ],
             ),
           ),
-          // Stake amount.
+          // Stake amount — formatMoney keeps currency rendering consistent.
           Expanded(
             flex: 2,
             child: Text(
-              '\$${entry.value}',
+              formatMoney(entry.value),
               textAlign: TextAlign.center,
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
             ),

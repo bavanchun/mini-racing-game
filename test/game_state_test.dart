@@ -40,7 +40,7 @@ void main() {
       game.setBet(0, 20); // bet 20 on racer 0
 
       final winner = GameConfig.racers[0];
-      final outcome = game.settleRace(winner);
+      final outcome = game.settleRace(winner, [0, 1, 2]);
 
       // money = 100 - 20 + (20 * 3) = 140
       expect(game.money, 140);
@@ -56,7 +56,7 @@ void main() {
       game.setBet(0, 20); // bet on racer 0 ...
 
       final winner = GameConfig.racers[1]; // ... but racer 1 wins
-      final outcome = game.settleRace(winner);
+      final outcome = game.settleRace(winner, [1, 0, 2]);
 
       // money = 100 - 20 + 0 = 80
       expect(game.money, 80);
@@ -71,7 +71,8 @@ void main() {
       game.setBet(1, 30);
       game.setBet(2, 20); // total staked = 60
 
-      final outcome = game.settleRace(GameConfig.racers[1]); // racer 1 wins
+      final outcome =
+          game.settleRace(GameConfig.racers[1], [1, 2, 0]); // racer 1 wins
 
       // money = 100 - 60 + (30 * 3) = 130
       expect(game.money, 130);
@@ -79,6 +80,40 @@ void main() {
       expect(outcome.payout, 90);
       expect(outcome.netChange, 30);
       expect(outcome.didWin, isTrue);
+    });
+  });
+
+  group('GameState finishing order & repeat-last-bets', () {
+    test('settleRace preserves the full finishing order in the outcome', () {
+      final game = GameState(money: 100);
+      game.setBet(2, 10);
+
+      final outcome = game.settleRace(GameConfig.racers[2], [2, 0, 1]);
+      expect(outcome.finishOrder, [2, 0, 1]);
+    });
+
+    test('repeatLastBets restores the previous stakes after settling', () {
+      final game = GameState(money: 100);
+      game.setBet(0, 10);
+      game.setBet(1, 20);
+
+      game.settleRace(GameConfig.racers[1], [1, 0, 2]);
+      expect(game.bets, isEmpty); // cleared after settling
+
+      expect(game.canRepeatLastBets, isTrue);
+      game.repeatLastBets();
+      expect(game.bets, {0: 10, 1: 20});
+    });
+
+    test('canRepeatLastBets is false when the snapshot exceeds the wallet', () {
+      final game = GameState(money: 100);
+      game.setBet(0, 60); // bet on a loser, lose it
+
+      game.settleRace(GameConfig.racers[1], [1, 0, 2]);
+      // wallet now 40, but the snapshot was 60 → cannot repeat.
+      expect(game.money, 40);
+      expect(game.lastBets, {0: 60});
+      expect(game.canRepeatLastBets, isFalse);
     });
   });
 }

@@ -3,18 +3,27 @@ import 'package:flutter/material.dart';
 import '../models/game_state.dart';
 import '../services/sound_service.dart';
 import '../theme/app_theme.dart';
+import '../utils/constants.dart';
+import '../utils/formatting.dart';
 import '../widgets/app_background.dart';
 import '../widgets/result_bet_table.dart';
 
 /// Displays the final standings and payout breakdown after a race.
 ///
-/// Receives an immutable [RaceOutcome] that was already settled by the Race
-/// screen — it never calls [GameState.settleRace]. It is a StatefulWidget only
-/// so it can play the win/lose sound cue once when first shown.
+/// Receives an immutable [RaceOutcome] already settled by the Race screen — it
+/// never calls [GameState.settleRace]. Also receives the live [GameState] so
+/// "Play Again" can restore prior bets when the wallet can still cover them.
+/// It is a StatefulWidget only so it can play the win/lose sound cue once when
+/// first shown.
 class ResultScreen extends StatefulWidget {
+  final GameState game;
   final RaceOutcome outcome;
 
-  const ResultScreen({super.key, required this.outcome});
+  const ResultScreen({
+    super.key,
+    required this.game,
+    required this.outcome,
+  });
 
   @override
   State<ResultScreen> createState() => _ResultScreenState();
@@ -32,14 +41,28 @@ class _ResultScreenState extends State<ResultScreen> {
     }
   }
 
-  /// Both navigation actions pop back to the Home screen (the first route).
-  void _goHome(BuildContext context) {
+  /// "Play Again": restore prior bets when the wallet can cover them, then go
+  /// home so the Home screen re-reads the now-populated [GameState.bets].
+  /// Falls back to a plain home navigation when the wallet is too low.
+  void _playAgain(BuildContext context) {
+    if (widget.game.canRepeatLastBets) {
+      widget.game.repeatLastBets();
+    }
+    // Navigate home in both branches — Home will show either the restored bets
+    // or a clean slate, depending on what happened above.
+    Navigator.popUntil(context, (route) => route.isFirst);
+  }
+
+  /// "Back to Home": always returns to fresh betting with no bet restoration.
+  void _backToHome(BuildContext context) {
     Navigator.popUntil(context, (route) => route.isFirst);
   }
 
   @override
   Widget build(BuildContext context) {
     final outcome = widget.outcome;
+    final canRepeat = widget.game.canRepeatLastBets;
+
     return GradientScaffold(
       appBar: AppBar(
         title: const Text('Race Results'),
@@ -53,13 +76,19 @@ class _ResultScreenState extends State<ResultScreen> {
             children: [
               _WinnerBanner(outcome: outcome),
               const SizedBox(height: 16),
+              _StandingsCard(outcome: outcome),
+              const SizedBox(height: 16),
               _PlayerOutcomeCard(outcome: outcome),
               const SizedBox(height: 16),
               _BetResultsCard(outcome: outcome),
               const SizedBox(height: 16),
               _SummaryCard(outcome: outcome),
               const SizedBox(height: 28),
-              _ActionButtons(onTap: () => _goHome(context)),
+              _ActionButtons(
+                canRepeat: canRepeat,
+                onPlayAgain: () => _playAgain(context),
+                onBackHome: () => _backToHome(context),
+              ),
               const SizedBox(height: 8),
             ],
           ),
@@ -118,6 +147,110 @@ class _WinnerBanner extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
+// Final standings card
+// ---------------------------------------------------------------------------
+
+/// Shows all three racers ranked in finish order (1st → 3rd) so the player
+/// can see where every horse placed, not just whether their bets won.
+class _StandingsCard extends StatelessWidget {
+  final RaceOutcome outcome;
+
+  const _StandingsCard({required this.outcome});
+
+  static const List<String> _medals = ['🥇', '🥈', '🥉'];
+  static const List<String> _positions = ['1st', '2nd', '3rd'];
+
+  @override
+  Widget build(BuildContext context) {
+    final racers = GameConfig.racers;
+    final order = outcome.finishOrder;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Final Standings',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 0.3,
+              ),
+            ),
+            const SizedBox(height: 10),
+            ...List.generate(order.length, (i) {
+              final id = order[i];
+              // Guard against an out-of-range id from a malformed outcome.
+              if (id < 0 || id >= racers.length) return const SizedBox.shrink();
+              final racer = racers[id];
+              final medal = i < _medals.length ? _medals[i] : '  ';
+              final posLabel = i < _positions.length ? _positions[i] : '${i + 1}th';
+              final isWinner = i == 0;
+
+              return Semantics(
+                label: '$posLabel: ${racer.name}',
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 6),
+                  child: Row(
+                    children: [
+                      // Medal emoji — aria label provided by Semantics above.
+                      Text(medal, style: const TextStyle(fontSize: 22)),
+                      const SizedBox(width: 10),
+                      Text(
+                        racer.emoji,
+                        style: const TextStyle(fontSize: 20),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          racer.name,
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: racer.color,
+                          ),
+                        ),
+                      ),
+                      // Small "winner" tag on the 1st-place entry.
+                      if (isWinner)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold.withAlpha(40),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: AppColors.gold,
+                              width: 1.2,
+                            ),
+                          ),
+                          child: const Text(
+                            'winner',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.gold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            }),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Player outcome (won / lost)
 // ---------------------------------------------------------------------------
 
@@ -159,7 +292,8 @@ class _PlayerOutcomeCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   if (didWin)
                     Text(
-                      'You receive \$${outcome.payout} back.',
+                      // Use formatMoney for consistent currency rendering.
+                      'You receive ${formatMoney(outcome.payout)} back.',
                       style: const TextStyle(fontSize: 14, color: Colors.black87),
                     )
                   else
@@ -246,19 +380,22 @@ class _SummaryCard extends StatelessWidget {
             const SizedBox(height: 12),
             _SummaryRow(
               label: 'Total Staked',
-              value: '\$${outcome.totalStaked}',
+              // formatMoney ensures consistent "$N" currency rendering.
+              value: formatMoney(outcome.totalStaked),
               valueColor: Colors.black87,
             ),
             const SizedBox(height: 8),
             _SummaryRow(
               label: 'Returned',
-              value: '\$${outcome.payout}',
+              value: formatMoney(outcome.payout),
               valueColor: Colors.black87,
             ),
             const SizedBox(height: 8),
             _SummaryRow(
               label: 'Net',
-              value: '${netPositive ? '+' : ''}\$${outcome.netChange}',
+              // formatSigned produces "+$30" / "-$50" so the sign and the "$"
+              // are in the correct order (fixes the "$-50" rendering bug).
+              value: formatSigned(outcome.netChange),
               valueColor: netPositive ? AppColors.win : AppColors.lose,
               bold: true,
             ),
@@ -283,7 +420,7 @@ class _SummaryCard extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '\$${outcome.moneyAfter}',
+                    formatMoney(outcome.moneyAfter),
                     style: const TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -340,11 +477,19 @@ class _SummaryRow extends StatelessWidget {
 // Action buttons
 // ---------------------------------------------------------------------------
 
-/// "Play Again" (primary) and "Back to Home" (outlined) — both navigate home.
+/// "Play Again" (primary) and "Back to Home" (outlined) with distinct behavior:
+/// Play Again restores the previous stakes when the wallet allows; Back to Home
+/// always navigates to fresh betting with no bet restoration.
 class _ActionButtons extends StatelessWidget {
-  final VoidCallback onTap;
+  final bool canRepeat;
+  final VoidCallback onPlayAgain;
+  final VoidCallback onBackHome;
 
-  const _ActionButtons({required this.onTap});
+  const _ActionButtons({
+    required this.canRepeat,
+    required this.onPlayAgain,
+    required this.onBackHome,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -352,12 +497,23 @@ class _ActionButtons extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         ElevatedButton(
-          onPressed: onTap,
+          onPressed: onPlayAgain,
           child: const Text('Play Again'),
         ),
+        // Hint: when prior bets cannot be repeated due to insufficient funds,
+        // a subtle note clarifies why "Play Again" starts fresh.
+        if (!canRepeat)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              'Not enough to repeat last bets — starting fresh',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            ),
+          ),
         const SizedBox(height: 10),
         OutlinedButton(
-          onPressed: onTap,
+          onPressed: onBackHome,
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.turf,
             side: const BorderSide(color: AppColors.turf, width: 1.5),

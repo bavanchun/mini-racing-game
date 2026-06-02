@@ -17,6 +17,10 @@ class GameState {
   /// stakes are stored; a racer with no entry has not been bet on.
   final Map<int, int> bets;
 
+  /// Snapshot of the stakes placed on the most recently settled race, taken in
+  /// [settleRace] before [clearBets]. Lets "Play Again" restore the prior bets.
+  Map<int, int> lastBets = {};
+
   GameState({this.money = GameConfig.startingMoney}) : bets = {};
 
   /// Sum of all stakes currently placed.
@@ -37,6 +41,17 @@ class GameState {
   /// Clear all stakes (used when starting a fresh round).
   void clearBets() => bets.clear();
 
+  /// True when there is a previous bet snapshot that the wallet can still cover.
+  bool get canRepeatLastBets =>
+      lastBets.isNotEmpty &&
+      lastBets.values.fold(0, (a, b) => a + b) <= money;
+
+  /// Restore the previous race's stakes into [bets]. Caller must guard with
+  /// [canRepeatLastBets] — this trusts that the snapshot is affordable.
+  void repeatLastBets() => bets
+    ..clear()
+    ..addAll(lastBets);
+
   /// Apply the outcome of a race to the wallet and return a breakdown.
   ///
   /// Accounting model: every stake is removed from the wallet, then the stake
@@ -44,7 +59,10 @@ class GameState {
   /// stakes return nothing.
   ///
   ///   newMoney = money - totalBet + (stakeOnWinner * winMultiplier)
-  RaceOutcome settleRace(Racer winner) {
+  ///
+  /// [finishOrder] ranks every racer id from 1st (index 0) to last and is
+  /// carried into the outcome so the Result screen can show full standings.
+  RaceOutcome settleRace(Racer winner, List<int> finishOrder) {
     final int staked = totalBet;
     final int winningStake = bets[winner.id] ?? 0;
     final int payout = winningStake * GameConfig.winMultiplier;
@@ -59,7 +77,10 @@ class GameState {
       payout: payout,
       netChange: net,
       moneyAfter: money,
+      finishOrder: List<int>.from(finishOrder),
     );
+    // Snapshot the stakes before clearing so "Play Again" can repeat them.
+    lastBets = Map<int, int>.from(bets);
     clearBets();
     return outcome;
   }
@@ -84,6 +105,9 @@ class RaceOutcome {
   /// Wallet value after the race was settled.
   final int moneyAfter;
 
+  /// Racer ids ranked from 1st (index 0) to last, for the standings list.
+  final List<int> finishOrder;
+
   const RaceOutcome({
     required this.winner,
     required this.bets,
@@ -91,6 +115,7 @@ class RaceOutcome {
     required this.payout,
     required this.netChange,
     required this.moneyAfter,
+    required this.finishOrder,
   });
 
   /// True when the player placed a (winning) stake on [winner].
