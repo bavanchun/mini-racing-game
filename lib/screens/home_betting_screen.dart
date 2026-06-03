@@ -5,36 +5,44 @@ import '../utils/constants.dart';
 import '../utils/route_observer.dart';
 import '../theme/app_theme.dart';
 import '../services/sound_service.dart';
+import '../services/user_storage.dart';
 import '../services/wallet_storage.dart';
 import '../widgets/app_background.dart';
 import '../widgets/bet_row.dart';
 import 'race_screen.dart';
 
-/// The entry point / lobby screen where the player places bets before a race.
+/// Điểm nhập / màn hình sảnh nơi người chơi đặt cược trước cuộc đua.
 ///
-/// Owns a single mutable [GameState] instance passed from main.dart. After
-/// [RaceScreen] completes (via `await`), we call `setState` so the wallet
-/// balance and any cleared bets reflect the settled race outcome.
+/// Sở hữu một instance [GameState] có thể thay đổi đơn được truyền từ main.dart. Sau
+/// [RaceScreen] hoàn thành (qua `await`), chúng ta gọi `setState` để số dư
+/// ví và bất kỳ cược đã xóa phản ánh outcome cuộc đua đã giải quyết.
 ///
-/// Also subscribes to [appRouteObserver] via [RouteAware] so that when the
-/// Result screen pops back (possibly after a "Play Again" repeat), `didPopNext`
-/// triggers a rebuild — reliably refreshing the wallet and repeated bets even
-/// if the `await` in `_startRace` already resolved earlier (which it does when
-/// Race is *replaced* by Result using pushReplacement).
+/// Cũng đăng ký với [appRouteObserver] qua [RouteAware] để khi màn hình
+/// Result pop back (có thể sau khi lặp "Play Again"), `didPopNext`
+/// kích hoạt rebuild — refresh đáng tin cậy ví và cược lặp lại ngay cả
+/// nếu `await` trong `_startRace` đã giải quyết sớm hơn (điều nó làm khi
+/// Race được *thay thế* bởi Result dùng pushReplacement).
 class HomeBettingScreen extends StatefulWidget {
-  final GameState game;
+  final int initialMoney;
+  final String? username;
 
-  const HomeBettingScreen({super.key, required this.game});
+  const HomeBettingScreen({
+    super.key, 
+    required this.initialMoney,
+    this.username,
+  });
 
   @override
   State<HomeBettingScreen> createState() => _HomeBettingScreenState();
 }
 
 class _HomeBettingScreenState extends State<HomeBettingScreen> with RouteAware {
-  /// How many dollars each +/- button press changes a stake.
+  late final GameState _game = GameState(money: widget.initialMoney);
+  
+  /// Số đô la mỗi lần nhấn nút +/- thay đổi cược.
   static const int _step = 10;
 
-  /// Fixed amount added by the per-row quick-bet button.
+  /// Số tiền cố định được thêm bởi nút quick-bet mỗi hàng.
   static const int _quickBetAmount = 50;
 
   // ── RouteAware lifecycle ──────────────────────────────────────────────────
@@ -52,25 +60,25 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> with RouteAware {
     super.dispose();
   }
 
-  /// Called when the screen that was pushed on top of this one pops back.
-  /// Rebuilds so the wallet balance and any "Play Again" repeated bets are
-  /// shown immediately, regardless of when the original `await` resolved.
+  /// Được gọi khi màn hình được đẩy lên trên màn hình này pop back.
+  /// Rebuilds để số dư ví và bất kỳ cược lặp lại "Play Again" được
+  /// hiển thị ngay lập tức, bất kể khi nào `await` gốc giải quyết.
   @override
   void didPopNext() => setState(() {});
 
   // ── helpers ───────────────────────────────────────────────────────────────
 
-  /// Current stake for [racerId], defaulting to 0 if none has been placed yet.
-  int _stakeFor(int racerId) => widget.game.bets[racerId] ?? 0;
+  /// Cược hiện tại cho [racerId], mặc định là 0 nếu chưa đặt cược nào.
+  int _stakeFor(int racerId) => _game.bets[racerId] ?? 0;
 
-  /// Remaining money the player can still bet (may not go negative).
-  int get _remaining => widget.game.money - widget.game.totalBet;
+  /// Số tiền còn lại người chơi vẫn có thể cược (không được âm).
+  int get _remaining => _game.money - _game.totalBet;
 
   // ── bet mutation ──────────────────────────────────────────────────────────
 
-  /// Increase the stake on [racer] by [_step], but never let totalBet exceed
-  /// the player's wallet — silently clamping prevents over-betting without
-  /// crashing. A SnackBar notifies the player when the ceiling is hit.
+  /// Tăng cược trên [racer] bằng [_step], nhưng không bao giờ để totalBet vượt quá
+  /// ví của người chơi — clamping âm thầm ngăn over-betting mà không
+  /// crash. SnackBar thông báo người chơi khi đạt trần.
   void _increment(int racerId) {
     final headroom = _headroom();
     if (headroom <= 0) {
@@ -79,21 +87,21 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> with RouteAware {
     }
     final added = headroom < _step ? headroom : _step;
     setState(() {
-      widget.game.setBet(racerId, _stakeFor(racerId) + added);
+      _game.setBet(racerId, _stakeFor(racerId) + added);
     });
   }
 
-  /// Decrease the stake on [racer] by [_step], clamping at 0.
+  /// Giảm cược trên [racer] bằng [_step], clamping ở 0.
   void _decrement(int racerId) {
     final current = _stakeFor(racerId);
     if (current <= 0) return;
     setState(() {
-      widget.game.setBet(racerId, current - _step);
+      _game.setBet(racerId, current - _step);
     });
   }
 
-  /// Add [_quickBetAmount] to the stake for [racerId], clamped to the same
-  /// wallet headroom rule as [_increment] — total bets can never exceed money.
+  /// Thêm [_quickBetAmount] vào cược cho [racerId], clamped theo cùng
+  /// quy tắc headroom ví như [_increment] — tổng cược không bao giờ vượt quá tiền.
   void _quickBet(int racerId) {
     final headroom = _headroom();
     if (headroom <= 0) {
@@ -102,13 +110,13 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> with RouteAware {
     }
     final added = headroom < _quickBetAmount ? headroom : _quickBetAmount;
     setState(() {
-      widget.game.setBet(racerId, _stakeFor(racerId) + added);
+      _game.setBet(racerId, _stakeFor(racerId) + added);
     });
   }
 
-  /// How much money is still available to bet.
-  /// Extracted so both [_increment] and [_quickBet] share the exact same rule.
-  int _headroom() => widget.game.money - widget.game.totalBet;
+  /// Có bao nhiêu tiền vẫn có sẵn để cược.
+  /// Được trích xuất để cả [_increment] và [_quickBet] chia sẻ cùng quy tắc chính xác.
+  int _headroom() => _game.money - _game.totalBet;
 
   void _showOverBetSnackBar() {
     ScaffoldMessenger.of(context).showSnackBar(
@@ -122,30 +130,44 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> with RouteAware {
 
   // ── navigation ────────────────────────────────────────────────────────────
 
-  /// Launch the race, then refresh state when control returns to this screen.
-  /// The `await` means we wait for the full Race + Result flow to pop back here.
+  /// Khởi chạy cuộc đua, sau đó refresh state khi điều khiển trả về màn hình này.
+  /// `await` có nghĩa là chúng ta chờ luồng Race + Result đầy đủ pop back về đây.
   Future<void> _startRace() async {
-    SoundService.playStart(); // race-start cue (fire-and-forget)
+    SoundService.playStart(); // tín hiệu bắt đầu cuộc đua (fire-and-forget)
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => RaceScreen(game: widget.game)),
+      MaterialPageRoute(builder: (_) => RaceScreen(game: _game)),
     );
-    // RaceScreen calls settleRace and ResultScreen pops back to us.
-    // Refresh wallet balance and cleared bets after settling, then persist.
+    // RaceScreen gọi settleRace và ResultScreen pop back về chúng ta.
+    // Refresh số dư ví và cược đã xóa sau khi giải quyết, sau đó persist.
     if (mounted) setState(() {});
-    WalletStorage.saveMoney(widget.game.money);
+    if (widget.username != null) {
+      WalletStorage.saveMoney(widget.username!, _game.money);
+    }
   }
 
   // ── reset wallet ──────────────────────────────────────────────────────────
 
-  /// Reset the player's wallet to the starting amount and clear any bets.
-  /// Only shown when the player has run out of money.
+  /// Reset ví của người chơi về số tiền khởi đầu và xóa mọi cược.
+  /// Chỉ hiển thị khi người chơi hết tiền.
   void _resetWallet() {
     setState(() {
-      widget.game.money = GameConfig.startingMoney;
-      widget.game.clearBets();
+      _game.money = GameConfig.startingMoney;
+      _game.clearBets();
     });
-    WalletStorage.saveMoney(widget.game.money);
+    if (widget.username != null) {
+      WalletStorage.saveMoney(widget.username!, _game.money);
+    }
+  }
+
+  // ── logout ───────────────────────────────────────────────────────────────
+
+  /// Đăng xuất người dùng hiện tại.
+  Future<void> _logout() async {
+    await UserStorage.logout();
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, '/');
+    }
   }
 
   // ── build ─────────────────────────────────────────────────────────────────
@@ -155,9 +177,18 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> with RouteAware {
     return GradientScaffold(
       appBar: AppBar(
         title: const Text('🐎 Place Your Bets'),
+        actions: widget.username != null
+            ? [
+                IconButton(
+                  icon: const Icon(Icons.logout),
+                  tooltip: 'Đăng xuất',
+                  onPressed: _logout,
+                ),
+              ]
+            : null,
       ),
       body: SafeArea(
-        child: widget.game.money <= 0
+        child: _game.money <= 0
             ? _buildBrokeState(context)
             : _buildBettingUI(context),
       ),
@@ -166,7 +197,7 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> with RouteAware {
 
   // ── broke state ───────────────────────────────────────────────────────────
 
-  /// Friendly screen shown when the player's wallet is empty.
+  /// Màn hình thân thiện hiển thị khi ví của người chơi trống.
   Widget _buildBrokeState(BuildContext context) {
     return Center(
       child: Padding(
@@ -209,8 +240,8 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> with RouteAware {
 
   Widget _buildBettingUI(BuildContext context) {
     final textTheme = Theme.of(context).textTheme;
-    final totalBet = widget.game.totalBet;
-    final canStart = widget.game.canStartRace;
+    final totalBet = _game.totalBet;
+    final canStart = _game.canStartRace;
 
     return SingleChildScrollView(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
@@ -218,7 +249,7 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> with RouteAware {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           // ── Wallet card ────────────────────────────────────────────────
-          _WalletCard(money: widget.game.money),
+          _WalletCard(money: _game.money),
 
           const SizedBox(height: 20),
 
@@ -255,7 +286,7 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> with RouteAware {
             Align(
               alignment: Alignment.centerRight,
               child: TextButton.icon(
-                onPressed: () => setState(() => widget.game.clearBets()),
+                onPressed: () => setState(() => _game.clearBets()),
                 icon: const Icon(Icons.clear_all, size: 18),
                 label: const Text('Clear All'),
                 style: TextButton.styleFrom(
@@ -295,7 +326,7 @@ class _HomeBettingScreenState extends State<HomeBettingScreen> with RouteAware {
 
 // ── Extracted private widgets (keep the main class under 200 lines) ──────────
 
-/// Prominent wallet display shown at the top of the betting screen.
+/// Hiển thị ví nổi bật ở trên cùng của màn hình cược.
 class _WalletCard extends StatelessWidget {
   final int money;
 
@@ -334,7 +365,7 @@ class _WalletCard extends StatelessWidget {
   }
 }
 
-/// Live summary card showing total bet placed and remaining balance.
+/// Card tóm tắt trực tiếp hiển thị tổng cược đã đặt và số dư còn lại.
 class _SummaryCard extends StatelessWidget {
   final int totalBet;
   final int remaining;

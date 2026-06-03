@@ -1,9 +1,9 @@
 import 'package:audioplayers/audioplayers.dart';
 
-/// Plays the short race sound cues (bonus feature).
+/// Phát các tín hiệu âm thanh ngắn cho cuộc đua (tính năng bonus).
 ///
-/// Cues are bundled WAV assets. Playback is best-effort: any failure (e.g.
-/// browser autoplay restrictions) is caught so audio never breaks gameplay.
+/// Cues là tài sản WAV được đóng gói. Playback là best-effort: mọi lỗi (ví dụ
+/// hạn chế autoplay của trình duyệt) được bắt để âm thanh không bao giờ làm hỏng gameplay.
 class SoundService {
   SoundService._();
 
@@ -14,7 +14,7 @@ class SoundService {
       await _player.stop();
       await _player.play(AssetSource(asset));
     } catch (_) {
-      // ignore: sound is a bonus, never block the game on it.
+      // ignore: sound là tính năng bonus, không bao giờ chặn game trên nó.
     }
   }
 

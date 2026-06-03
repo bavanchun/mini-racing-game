@@ -2,32 +2,35 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../utils/constants.dart';
 
-/// Persists the player's wallet across app launches (bonus feature).
+/// Lưu trữ ví của người chơi qua các lần khởi chạy ứng dụng (tính năng bonus).
 ///
-/// All methods fail soft: if storage is unavailable the game still works,
-/// it just won't remember money between sessions.
+/// Tất cả các phương thức đều fail soft: nếu storage không khả dụng thì game vẫn hoạt động,
+/// chỉ là không nhớ số tiền giữa các phiên làm việc.
+/// Ví được lưu theo username để hỗ trợ nhiều người dùng.
 class WalletStorage {
   WalletStorage._();
 
-  static const String _moneyKey = 'wallet_money';
+  static const String _moneyPrefix = 'wallet_money_';
 
-  /// Load the saved wallet, falling back to the starting amount.
-  static Future<int> loadMoney() async {
+  /// Tải ví đã lưu cho người dùng cụ thể, nếu không có thì dùng số tiền khởi đầu.
+  static Future<int> loadMoney(String username) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      return prefs.getInt(_moneyKey) ?? GameConfig.startingMoney;
+      final key = '$_moneyPrefix$username';
+      return prefs.getInt(key) ?? GameConfig.startingMoney;
     } catch (_) {
       return GameConfig.startingMoney;
     }
   }
 
-  /// Save the current wallet. Errors are swallowed on purpose.
-  static Future<void> saveMoney(int money) async {
+  /// Lưu ví hiện tại cho người dùng cụ thể. Các lỗi được cố ý bỏ qua.
+  static Future<void> saveMoney(String username, int money) async {
     try {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt(_moneyKey, money);
+      final key = '$_moneyPrefix$username';
+      await prefs.setInt(key, money);
     } catch (_) {
-      // ignore: persistence is a best-effort bonus, never block gameplay.
+      // ignore: persistence là tính năng best-effort bonus, không bao giờ chặn gameplay.
     }
   }
 }

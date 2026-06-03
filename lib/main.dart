@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'models/game_state.dart';
+import 'models/user.dart';
 import 'screens/home_betting_screen.dart';
+import 'screens/login_screen.dart';
+import 'services/user_storage.dart';
 import 'services/wallet_storage.dart';
 import 'theme/app_theme.dart';
+import 'utils/constants.dart';
 import 'utils/route_observer.dart';
 
 Future<void> main() async {
@@ -19,27 +22,27 @@ Future<void> main() async {
     systemNavigationBarIconBrightness: Brightness.dark,
   ));
 
-  final savedMoney = await WalletStorage.loadMoney();
-  runApp(MiniRacingGameApp(initialMoney: savedMoney));
+  final currentUser = await UserStorage.getCurrentUser();
+  int initialMoney = GameConfig.startingMoney;
+  if (currentUser != null) {
+    initialMoney = await WalletStorage.loadMoney(currentUser.username);
+  }
+  runApp(MiniRacingGameApp(currentUser: currentUser, initialMoney: initialMoney));
 }
 
-/// Root of the mini horse-racing betting game.
+/// Root của game đua ngựa đặt cược mini.
 ///
-/// A single [GameState] is created here and handed to the Home screen, which
-/// passes the same instance down to the Race and Result screens. Holding it at
-/// the root keeps the wallet alive across the Home → Race → Result → Home loop.
-class MiniRacingGameApp extends StatefulWidget {
-  /// Wallet restored from storage (defaults to the starting amount).
+/// Kiểm tra xem người dùng đã đăng nhập chưa. Nếu có, hiển thị màn hình Home
+/// với ví của họ. Nếu chưa, hiển thị màn hình đăng nhập.
+class MiniRacingGameApp extends StatelessWidget {
+  final User? currentUser;
   final int initialMoney;
 
-  const MiniRacingGameApp({super.key, required this.initialMoney});
-
-  @override
-  State<MiniRacingGameApp> createState() => _MiniRacingGameAppState();
-}
-
-class _MiniRacingGameAppState extends State<MiniRacingGameApp> {
-  late final GameState _game = GameState(money: widget.initialMoney);
+  const MiniRacingGameApp({
+    super.key, 
+    required this.currentUser,
+    required this.initialMoney,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -48,7 +51,15 @@ class _MiniRacingGameAppState extends State<MiniRacingGameApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.light,
       navigatorObservers: [appRouteObserver],
-      home: HomeBettingScreen(game: _game),
+      initialRoute: '/',
+      routes: {
+        '/': (context) => currentUser != null
+            ? HomeBettingScreen(
+                initialMoney: initialMoney,
+                username: currentUser?.username,
+              )
+            : const LoginScreen(),
+      },
     );
   }
 }

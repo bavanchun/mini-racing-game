@@ -1,35 +1,35 @@
 import 'racer.dart';
 import '../utils/constants.dart';
 
-/// Mutable game session shared across the three screens.
+/// Session game có thể thay đổi được chia sẻ qua ba màn hình.
 ///
-/// A single instance is created on the Home screen and passed by reference to
-/// the Race and Result screens. The Result screen mutates [money] via
-/// [settleRace]; when control returns to Home it calls `setState` to redraw.
+/// Một instance đơn được tạo trên màn hình Home và truyền bằng tham chiếu đến
+/// màn hình Race và Result. Màn hình Result thay đổi [money] qua
+/// [settleRace]; khi điều khiển trả về Home nó gọi `setState` để vẽ lại.
 ///
-/// State is held here (plain object + `setState` in the widgets) rather than in
-/// a state-management package, per the lab's requirement to use StatefulWidget.
+/// State được giữ ở đây (đối tượng thường + `setState` trong widgets) thay vì trong
+/// package state-management, theo yêu cầu của lab là dùng StatefulWidget.
 class GameState {
-  /// The player's current wallet.
+  /// Ví hiện tại của người chơi.
   int money;
 
-  /// Pending stakes for the upcoming race, keyed by racer id. Only positive
-  /// stakes are stored; a racer with no entry has not been bet on.
+  /// Các cược đang chờ cho cuộc đua sắp tới, được key theo id tay đua. Chỉ các
+  /// cược dương được lưu; tay đua không có entry nghĩa là không được đặt cược.
   final Map<int, int> bets;
 
-  /// Snapshot of the stakes placed on the most recently settled race, taken in
-  /// [settleRace] before [clearBets]. Lets "Play Again" restore the prior bets.
+  /// Snapshot của các cược được đặt cho cuộc đua gần nhất đã giải quyết, được lấy trong
+  /// [settleRace] trước [clearBets]. Cho phép "Play Again" khôi phục các cược trước.
   Map<int, int> lastBets = {};
 
   GameState({this.money = GameConfig.startingMoney}) : bets = {};
 
-  /// Sum of all stakes currently placed.
+  /// Tổng của tất cả các cược hiện đang được đặt.
   int get totalBet => bets.values.fold(0, (sum, stake) => sum + stake);
 
-  /// True when at least one stake is placed and the player can afford it.
+  /// True khi ít nhất một cược được đặt và người chơi có thể chi trả.
   bool get canStartRace => totalBet > 0 && totalBet <= money;
 
-  /// Replace the stake on [racerId]. A stake of 0 (or less) clears the bet.
+  /// Thay thế cược trên [racerId]. Cược 0 (hoặc ít hơn) sẽ xóa cược.
   void setBet(int racerId, int stake) {
     if (stake <= 0) {
       bets.remove(racerId);
@@ -38,30 +38,30 @@ class GameState {
     }
   }
 
-  /// Clear all stakes (used when starting a fresh round).
+  /// Xóa tất cả các cược (dùng khi bắt đầu vòng mới).
   void clearBets() => bets.clear();
 
-  /// True when there is a previous bet snapshot that the wallet can still cover.
+  /// True khi có snapshot cược trước đó mà ví vẫn có thể chi trả.
   bool get canRepeatLastBets =>
       lastBets.isNotEmpty &&
       lastBets.values.fold(0, (a, b) => a + b) <= money;
 
-  /// Restore the previous race's stakes into [bets]. Caller must guard with
-  /// [canRepeatLastBets] — this trusts that the snapshot is affordable.
+  /// Khôi phục các cược của cuộc đua trước vào [bets]. Caller phải guard với
+  /// [canRepeatLastBets] — điều này tin rằng snapshot có thể chi trả được.
   void repeatLastBets() => bets
     ..clear()
     ..addAll(lastBets);
 
-  /// Apply the outcome of a race to the wallet and return a breakdown.
+  /// Áp dụng kết quả của cuộc đua vào ví và trả về phân tích chi tiết.
   ///
-  /// Accounting model: every stake is removed from the wallet, then the stake
-  /// placed on the winner is paid back at [GameConfig.winMultiplier]x. Losing
-  /// stakes return nothing.
+  /// Mô hình kế toán: mọi cược được loại bỏ khỏi ví, sau đó cược
+  /// đặt trên người thắng được trả lại với tỷ lệ [GameConfig.winMultiplier]x. Các
+  /// cược thua không trả lại gì.
   ///
   ///   newMoney = money - totalBet + (stakeOnWinner * winMultiplier)
   ///
-  /// [finishOrder] ranks every racer id from 1st (index 0) to last and is
-  /// carried into the outcome so the Result screen can show full standings.
+  /// [finishOrder] xếp hạng mọi id tay đua từ thứ nhất (index 0) đến cuối cùng và được
+  /// đưa vào outcome để màn hình Result có thể hiển thị bảng xếp hạng đầy đủ.
   RaceOutcome settleRace(Racer winner, List<int> finishOrder) {
     final int staked = totalBet;
     final int winningStake = bets[winner.id] ?? 0;
@@ -79,33 +79,33 @@ class GameState {
       moneyAfter: money,
       finishOrder: List<int>.from(finishOrder),
     );
-    // Snapshot the stakes before clearing so "Play Again" can repeat them.
+    // Snapshot các cược trước khi xóa để "Play Again" có thể lặp lại chúng.
     lastBets = Map<int, int>.from(bets);
     clearBets();
     return outcome;
   }
 }
 
-/// Immutable snapshot of a finished race, consumed by the Result screen.
+/// Snapshot bất biến của một cuộc đua đã kết thúc, được dùng bởi màn hình Result.
 class RaceOutcome {
   final Racer winner;
 
-  /// Stakes that were in play, keyed by racer id.
+  /// Các cược đang trong cuộc chơi, được key theo id tay đua.
   final Map<int, int> bets;
 
-  /// Total amount the player staked across all racers.
+  /// Tổng số tiền người chơi đặt cược trên tất cả tay đua.
   final int totalStaked;
 
-  /// Amount returned to the wallet (winning stake x multiplier).
+  /// Số tiền trả lại vào ví (cược thắng x hệ số).
   final int payout;
 
-  /// payout - totalStaked. Positive = profit, negative = loss.
+  /// payout - totalStaked. Dương = lợi nhuận, âm = thua lỗ.
   final int netChange;
 
-  /// Wallet value after the race was settled.
+  /// Giá trị ví sau khi cuộc đua được giải quyết.
   final int moneyAfter;
 
-  /// Racer ids ranked from 1st (index 0) to last, for the standings list.
+  /// Ids tay đua được xếp hạng từ thứ nhất (index 0) đến cuối cùng, cho danh sách xếp hạng.
   final List<int> finishOrder;
 
   const RaceOutcome({
@@ -118,6 +118,6 @@ class RaceOutcome {
     required this.finishOrder,
   });
 
-  /// True when the player placed a (winning) stake on [winner].
+  /// True khi người chơi đặt cược (thắng) trên [winner].
   bool get didWin => (bets[winner.id] ?? 0) > 0;
 }

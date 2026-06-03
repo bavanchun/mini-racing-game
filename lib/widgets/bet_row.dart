@@ -3,31 +3,31 @@ import 'package:flutter/material.dart';
 import '../models/racer.dart';
 import '../theme/app_theme.dart';
 
-/// A single row in the betting UI representing one [racer].
+/// Một hàng đơn trong UI cược đại diện cho một [racer].
 ///
-/// Displays the horse emoji, the racer's name in its own accent colour, the
-/// current [stake], and -/+/+50 buttons to adjust the stake.
+/// Hiển thị emoji ngựa, tên của tay đua trong màu nhấn của nó,
+/// [stake] hiện tại, và các nút -/+/+50 để điều chỉnh cược.
 ///
-/// The parent is responsible for clamping: [onDecrement] / [onIncrement] /
-/// [onQuickBet] callbacks are fired and the parent decides whether the change
-/// is valid before calling `setState`. This keeps all validation logic in one
-/// place (the screen) rather than duplicating it across rows.
+/// Parent chịu trách nhiệm clamping: callbacks [onDecrement] / [onIncrement] /
+/// [onQuickBet] được kích hoạt và parent quyết định liệu thay đổi
+/// có hợp lệ trước khi gọi `setState`. Điều này giữ tất cả logic xác thực ở một
+/// nơi (màn hình) thay vì nhân bản qua các hàng.
 class BetRow extends StatelessWidget {
   final Racer racer;
 
-  /// Current stake amount placed on this racer (already read from GameState).
+  /// Số tiền cược hiện tại được đặt trên tay đua này (đã đọc từ GameState).
   final int stake;
 
-  /// Amount by which each +/- button press changes the stake.
+  /// Số tiền mỗi lần nhấn nút +/- thay đổi cược.
   final int step;
 
-  /// Called when the user taps "-". The parent clamps to >= 0.
+  /// Được gọi khi người chơi nhấn "-". Parent clamp đến >= 0.
   final VoidCallback onDecrement;
 
-  /// Called when the user taps "+". The parent prevents over-betting.
+  /// Được gọi khi người chơi nhấn "+". Parent ngăn over-betting.
   final VoidCallback onIncrement;
 
-  /// Called when the user taps "+50". The parent clamps to wallet headroom.
+  /// Được gọi khi người chơi nhấn "+50". Parent clamp đến headroom ví.
   final VoidCallback onQuickBet;
 
   const BetRow({
@@ -50,14 +50,14 @@ class BetRow extends StatelessWidget {
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         child: Row(
           children: [
-            // Horse emoji — large enough to be visually prominent.
+            // Emoji ngựa — đủ lớn để nổi bật về mặt thị giác.
             Text(
               racer.emoji,
               style: const TextStyle(fontSize: 32),
             ),
             const SizedBox(width: 12),
 
-            // Racer name, coloured with the racer's accent colour.
+            // Tên tay đua, được màu với màu nhấn của tay đua.
             Expanded(
               child: Text(
                 racer.name,
@@ -68,9 +68,9 @@ class BetRow extends StatelessWidget {
               ),
             ),
 
-            // Decrement button — greyed out when stake is already zero.
-            // Wrapped in Semantics so screen readers announce the horse name
-            // rather than just "remove button".
+            // Nút giảm — xám đi khi cược đã bằng 0.
+            // Được bọc trong Semantics để screen readers thông báo tên ngựa
+            // thay vì chỉ "remove button".
             Semantics(
               button: true,
               label: 'Remove bet on ${racer.name}',
@@ -82,10 +82,10 @@ class BetRow extends StatelessWidget {
               ),
             ),
 
-            // Current stake display in a fixed-width container so the layout
-            // stays stable as numbers grow (e.g., 0 → 100).
-            // excludeSemantics prevents the raw "$X" from being read without
-            // context; the Semantics wrapper names the horse + amount.
+            // Hiển thị cược hiện tại trong container chiều rộng cố định để layout
+            // giữ ổn định khi số tăng (ví dụ, 0 → 100).
+            // excludeSemantics ngăn "$X" thô được đọc mà không có
+            // ngữ cảnh; wrapper Semantics đặt tên cho ngựa + số tiền.
             Semantics(
               label: '${racer.name} stake \$$stake dollars',
               excludeSemantics: true,
@@ -102,7 +102,7 @@ class BetRow extends StatelessWidget {
               ),
             ),
 
-            // Increment button.
+            // Nút tăng.
             Semantics(
               button: true,
               label: 'Add bet on ${racer.name}',
@@ -116,8 +116,8 @@ class BetRow extends StatelessWidget {
 
             const SizedBox(width: 6),
 
-            // Quick-bet +50 button — smaller text chip style for visual
-            // distinction from the step buttons, same green colour family.
+            // Nút quick-bet +50 — style chip văn bản nhỏ hơn để phân biệt
+            // thị giác từ các nút bước, cùng họ màu xanh lá.
             Semantics(
               button: true,
               label: 'Add 50 dollars to bet on ${racer.name}',
@@ -133,14 +133,14 @@ class BetRow extends StatelessWidget {
   }
 }
 
-/// Small circular icon button used for the +/- controls.
+/// Nút icon hình tròn nhỏ dùng cho các điều khiển +/-.
 ///
-/// The tappable hit area is padded to ≥48×48 dp (Material minimum touch
-/// target) while the visible circle stays 36 px. This improves usability
-/// without changing the visual design.
+/// Vùng chạm tappable được đệm đến ≥48×48 dp (mục tiêu chạm tối thiểu của Material)
+/// trong khi hình tròn hiển thị giữ ở 36 px. Điều này cải thiện tính sử dụng
+/// mà không thay đổi thiết kế thị giác.
 ///
-/// Receives a nullable [onTap] so it can be disabled (greyed) when the action
-/// is not allowed (e.g., decrement when stake is already zero).
+/// Nhận [onTap] nullable để nó có thể bị vô hiệu hóa (xám) khi hành động
+/// không được phép (ví dụ, giảm khi cược đã bằng 0).
 class _StepButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback? onTap;
@@ -155,8 +155,8 @@ class _StepButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isEnabled = onTap != null;
-    // SizedBox(48,48) ensures the InkWell fills the full 48×48 touch target
-    // while the inner Container stays at 36×36 for the visual circle.
+    // SizedBox(48,48) đảm bảo InkWell điền đầy mục tiêu chạm 48×48
+    // trong khi Container bên trong giữ ở 36×36 cho hình tròn thị giác.
     return SizedBox(
       width: 48,
       height: 48,
@@ -187,10 +187,10 @@ class _StepButton extends StatelessWidget {
   }
 }
 
-/// Compact "+50" quick-bet chip appended after the increment button.
+/// Chip quick-bet "+50" nhỏ gọn được thêm sau nút tăng.
 ///
-/// Uses an OutlinedButton with a small font so it stays visually lighter than
-/// the primary +/- circles but remains clearly tappable.
+/// Sử dụng OutlinedButton với font nhỏ để nó giữ nhẹ hơn về mặt thị giác
+/// so với các hình tròn +/- chính nhưng vẫn rõ ràng có thể chạm.
 class _QuickBetButton extends StatelessWidget {
   final VoidCallback onTap;
 

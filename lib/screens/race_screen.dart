@@ -24,19 +24,19 @@ class RaceScreen extends StatefulWidget {
 }
 
 class _RaceScreenState extends State<RaceScreen> {
-  /// Live positions for each racer, indexed by [Racer.id].
+  /// Vị trí trực tiếp cho mỗi tay đua, được index bởi [Racer.id].
   late List<double> _progress;
 
-  /// Prevents [_onRaceFinished] from firing more than once when two racers
-  /// reach >= 1.0 on the same tick (the timer callback is synchronous so there
-  /// is no race condition between ticks, only within one tick).
+  /// Ngăn [_onRaceFinished] firing nhiều hơn một lần khi hai tay đua
+  /// đạt >= 1.0 trên cùng tick (callback timer là đồng bộ nên không có
+  /// race condition giữa các tick, chỉ trong một tick).
   bool _finished = false;
 
   Timer? _timer;
   final Random _rng = Random();
 
-  /// Index of the winner once the race ends, used only for the UI highlight
-  /// while the navigation push is in flight.
+  /// Index của người thắng khi cuộc đua kết thúc, chỉ dùng cho highlight UI
+  /// trong khi navigation push đang bay.
   int? _winnerId;
 
   @override
@@ -217,7 +217,7 @@ class _RaceScreenState extends State<RaceScreen> {
 // Private sub-widgets (kept here as they are only used by RaceScreen)
 // ---------------------------------------------------------------------------
 
-/// Prominent banner at the top of the screen showing race status.
+/// Banner nổi bật ở trên cùng của màn hình hiển thị trạng thái cuộc đua.
 class _StatusBanner extends StatelessWidget {
   final String text;
   final bool isFinished;

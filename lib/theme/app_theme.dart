@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// Shared colours and the app-wide [ThemeData] for the racing game.
+/// Màu sắc chia sẻ và [ThemeData] toàn app cho game đua.
 ///
-/// A warm "race day" palette: green turf, cream rails, and a gold accent.
+/// Bảng màu ấm "ngày đua": cỏ xanh, đường kem, và nhấn vàng.
 class AppColors {
   AppColors._();
 

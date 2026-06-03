@@ -8,13 +8,13 @@ import '../utils/formatting.dart';
 import '../widgets/app_background.dart';
 import '../widgets/result_bet_table.dart';
 
-/// Displays the final standings and payout breakdown after a race.
+/// Hiển thị bảng xếp hạng cuối cùng và phân tích chi tiết payout sau cuộc đua.
 ///
-/// Receives an immutable [RaceOutcome] already settled by the Race screen — it
-/// never calls [GameState.settleRace]. Also receives the live [GameState] so
-/// "Play Again" can restore prior bets when the wallet can still cover them.
-/// It is a StatefulWidget only so it can play the win/lose sound cue once when
-/// first shown.
+/// Nhận một [RaceOutcome] bất biến đã được giải quyết bởi màn hình Race — nó
+/// không bao giờ gọi [GameState.settleRace]. Cũng nhận [GameState] trực tiếp để
+/// "Play Again" có thể khôi phục cược trước khi ví vẫn có thể chi trả.
+/// Nó là StatefulWidget chỉ để nó có thể phát tín hiệu âm thanh thắng/thua một lần khi
+/// được hiển thị lần đầu.
 class ResultScreen extends StatefulWidget {
   final GameState game;
   final RaceOutcome outcome;
@@ -41,9 +41,9 @@ class _ResultScreenState extends State<ResultScreen> {
     }
   }
 
-  /// "Play Again": restore prior bets when the wallet can cover them, then go
-  /// home so the Home screen re-reads the now-populated [GameState.bets].
-  /// Falls back to a plain home navigation when the wallet is too low.
+  /// "Play Again": khôi phục cược trước khi ví có thể chi trả, sau đó đi
+  /// home để màn hình Home đọc lại [GameState.bets] đã được điền.
+  /// Fallback về navigation home thường khi ví quá thấp.
   void _playAgain(BuildContext context) {
     if (widget.game.canRepeatLastBets) {
       widget.game.repeatLastBets();
@@ -53,7 +53,7 @@ class _ResultScreenState extends State<ResultScreen> {
     Navigator.popUntil(context, (route) => route.isFirst);
   }
 
-  /// "Back to Home": always returns to fresh betting with no bet restoration.
+  /// "Back to Home": luôn trả về cược mới với không khôi phục cược.
   void _backToHome(BuildContext context) {
     Navigator.popUntil(context, (route) => route.isFirst);
   }
@@ -102,7 +102,7 @@ class _ResultScreenState extends State<ResultScreen> {
 // Winner banner
 // ---------------------------------------------------------------------------
 
-/// Large headline announcing the winning horse.
+/// Headline lớn thông báo con ngựa thắng.
 class _WinnerBanner extends StatelessWidget {
   final RaceOutcome outcome;
 

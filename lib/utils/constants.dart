@@ -2,21 +2,21 @@ import 'package:flutter/material.dart';
 
 import '../models/racer.dart';
 
-/// Central game-tuning values and the fixed roster of racers.
+/// Các giá trị tinh chỉnh game trung tâm và danh sách tay đua cố định.
 ///
-/// Keeping these in one place makes the betting rules easy to verify and
-/// lets every screen share the exact same roster.
+/// Giữ những thứ này ở một nơi làm cho quy tắc cược dễ kiểm chứng và
+/// cho phép mọi màn hình chia sẻ cùng một danh sách chính xác.
 class GameConfig {
   GameConfig._();
 
-  /// Wallet the player starts with (and the floor we reset to if they go broke).
+  /// Ví mà người chơi bắt đầu với (và mức sàn chúng ta reset về nếu họ vỡ nợ).
   static const int startingMoney = 100;
 
-  /// Multiplier applied to the stake placed on the winning racer.
-  /// A winning bet of `s` returns `s * winMultiplier` to the wallet.
+  /// Hệ số áp dụng cho cược đặt trên tay đua thắng.
+  /// Một cược thắng của `s` trả lại `s * winMultiplier` vào ví.
   static const int winMultiplier = 3;
 
-  /// The three horses. Ids are 0..2 and are used as bet/result keys.
+  /// Ba con ngựa. Ids là 0..2 và được dùng làm key cược/kết quả.
   static const List<Racer> racers = [
     Racer(id: 0, name: 'Thunder', emoji: '🐎', color: Color(0xFFE53935)), // red
     Racer(id: 1, name: 'Blaze', emoji: '🐎', color: Color(0xFF1E88E5)), // blue
@@ -24,24 +24,24 @@ class GameConfig {
   ];
 }
 
-/// Tuning for the fake-slider race animation (see Race screen).
+/// Tinh chỉnh cho animation đua giả slider (xem màn hình Race).
 class RaceConfig {
   RaceConfig._();
 
-  /// How often each racer advances. Lower = smoother but busier.
-  /// Shorter tick + smaller steps = a longer, smoothly gliding race.
+  /// Tần suất mỗi tay đua tiến lên. Thấp hơn = mượt mà hơn nhưng bận rộn hơn.
+  /// Tick ngắn hơn + bước nhỏ hơn = cuộc đua dài hơn, trôi mượt mà.
   static const Duration tick = Duration(milliseconds: 80);
 
-  /// Minimum / maximum fraction of the track a racer can gain per tick.
-  /// The random pick inside this range is what makes speeds differ.
-  /// Avg ≈0.012 → ~83 ticks × 80ms ≈ 6.6s race.
+  /// Phân số tối thiểu / tối đa của đường đua mà tay đua có thể đạt được mỗi tick.
+  /// Lựa chọn ngẫu nhiên trong phạm vi này là điều làm cho tốc độ khác nhau.
+  /// Trung bình ≈0.012 → ~83 ticks × 80ms ≈ 6.6s cuộc đua.
   static const double minStep = 0.006;
   static const double maxStep = 0.018;
 
-  /// Pause after a winner is highlighted before navigating to the results, so
-  /// the photo-finish moment registers.
+  /// Tạm dừng sau khi người thắng được highlight trước khi điều hướng đến kết quả, để
+  /// khoảnh khắc photo-finish được ghi nhận.
   static const Duration photoFinishDelay = Duration(milliseconds: 1100);
 
-  /// Countdown pause before the race begins (was a magic number in the screen).
+  /// Tạm dừng đếm ngược trước khi cuộc đua bắt đầu (trước đây là số magic trong màn hình).
   static const Duration countdown = Duration(milliseconds: 600);
 }

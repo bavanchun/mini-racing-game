@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
-/// A soft "race day" vertical gradient (sky → turf → cream) used behind every
-/// screen for a consistent, polished backdrop.
+/// Gradient dọc mềm "ngày đua" (trời → cỏ → kem) dùng phía sau mọi
+/// màn hình để có backdrop nhất quán, bóng bẩy.
 ///
-/// Wrap a screen's body with this and keep the [Scaffold.backgroundColor]
-/// transparent so the gradient shows through.
+/// Bọc body của màn hình với cái này và giữ [Scaffold.backgroundColor]
+/// trong suốt để gradient hiển thị qua.
 class AppBackground extends StatelessWidget {
   final Widget child;
 
@@ -12,9 +12,9 @@ class AppBackground extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // SizedBox.expand forces the gradient to fill all available space even when
-    // the child is shorter than the screen, so the backdrop reaches edge-to-edge
-    // (including behind the transparent system nav bar — no black band).
+    // SizedBox.expand buộc gradient điền tất cả không gian có sẵn ngay cả khi
+    // con ngắn hơn màn hình, để backdrop đạt tới cạnh-đến-cạnh
+    // (bao gồm cả phía sau thanh điều hướng hệ thống trong suốt — không có dải đen).
     return SizedBox.expand(
       child: DecoratedBox(
         decoration: const BoxDecoration(
@@ -35,8 +35,8 @@ class AppBackground extends StatelessWidget {
   }
 }
 
-/// Convenience: a [Scaffold] backed by [AppBackground] with a transparent
-/// surface so the gradient is visible. Keeps screen code tidy.
+/// Tiện lợi: một [Scaffold] được hỗ trợ bởi [AppBackground] với bề mặt
+/// trong suốt để gradient hiển thị. Giữ code màn hình gọn gàng.
 class GradientScaffold extends StatelessWidget {
   final PreferredSizeWidget? appBar;
   final Widget body;
@@ -45,10 +45,10 @@ class GradientScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // The gradient sits BEHIND a transparent Scaffold (rather than inside its
-    // body) so it covers the entire window — including the region behind the
-    // bottom system nav bar. extendBody lets the body draw into that region too,
-    // so the cream gradient shows through instead of a black band.
+    // Gradient nằm PHÍA SAU một Scaffold trong suốt (thay vì bên trong body của nó)
+    // để nó che toàn bộ cửa sổ — bao gồm vùng phía sau thanh điều hướng hệ thống dưới cùng.
+    // extendBody cho phép body vẽ vào vùng đó nữa,
+    // để gradient kem hiển thị thay vì dải đen.
     return AppBackground(
       child: Scaffold(
         backgroundColor: Colors.transparent,

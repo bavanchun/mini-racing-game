@@ -3,13 +3,21 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mini_racing_game/main.dart';
+import 'package:mini_racing_game/models/user.dart';
 import 'package:mini_racing_game/utils/constants.dart';
 
 void main() {
   testWidgets('app launches on the betting screen with the starting wallet',
       (WidgetTester tester) async {
     await tester.pumpWidget(
-      const MiniRacingGameApp(initialMoney: GameConfig.startingMoney),
+      MiniRacingGameApp(
+        currentUser: User(
+          username: 'tester',
+          password: 'secret',
+          createdAt: DateTime(2024),
+        ),
+        initialMoney: GameConfig.startingMoney,
+      ),
     );
 
     // Starting wallet is shown.

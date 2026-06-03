@@ -1,21 +1,21 @@
 import 'package:flutter/material.dart';
 
-/// A single competitor in the race (one of the three horses).
+/// Một đối thủ duy nhất trong cuộc đua (một trong ba con ngựa).
 ///
-/// Immutable description of *who* races. The live race position is tracked
-/// separately in the Race screen so the same roster can be reused every round.
+/// Mô tả bất biến về *ai* đang đua. Vị trí đua thực tế được theo dõi
+/// riêng trong màn hình Race để cùng một danh sách có thể được tái sử dụng mỗi vòng.
 class Racer {
-  /// Stable id (0, 1, 2) used as the key for bets and results.
+  /// Id ổn định (0, 1, 2) được dùng làm key cho cược và kết quả.
   final int id;
 
-  /// Display name shown on the betting and result screens.
+  /// Tên hiển thị được hiện trên màn hình cược và kết quả.
   final String name;
 
-  /// Emoji glyph used to draw the horse on its track (Material Icons has no
-  /// horse, so a glyph gives us a real, crisp horse on every platform).
+  /// Glyph emoji dùng để vẽ con ngựa trên đường đua của nó (Material Icons không có
+  /// ngựa, nên glyph cho chúng ta một con ngựa thực sự, sắc nét trên mọi nền tảng).
   final String emoji;
 
-  /// Accent colour for this racer's track and bet row.
+  /// Màu nhấn cho đường đua và hàng cược của tay đua này.
   final Color color;
 
   const Racer({

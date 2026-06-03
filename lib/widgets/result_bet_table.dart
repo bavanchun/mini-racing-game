@@ -6,10 +6,10 @@ import '../theme/app_theme.dart';
 import '../utils/constants.dart';
 import '../utils/formatting.dart';
 
-/// Renders the per-racer bet breakdown from a finished race.
+/// Render phân tích cược theo tay đua từ một cuộc đua đã kết thúc.
 ///
-/// Each row shows the racer that was staked, the stake amount, and whether
-/// that racer won or lost. Winning rows are highlighted green, losing rows red.
+/// Mỗi hàng hiển thị tay đua được cược, số tiền cược, và liệu
+/// tay đua đó thắng hay thua. Hàng thắng được highlight xanh, hàng thua đỏ.
 class ResultBetTable extends StatelessWidget {
   final RaceOutcome outcome;
 
@@ -44,7 +44,7 @@ class ResultBetTable extends StatelessWidget {
   }
 }
 
-/// Column header row for the bet table.
+/// Hàng header cột cho bảng cược.
 class _TableHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -68,7 +68,7 @@ class _TableHeader extends StatelessWidget {
   }
 }
 
-/// A single row displaying the stake and outcome for one racer.
+/// Một hàng đơn hiển thị cược và kết quả cho một tay đua.
 class _BetRow extends StatelessWidget {
   final MapEntry<int, int> entry;
   final Racer winner;
@@ -77,7 +77,7 @@ class _BetRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Safely look up the racer; skip row if id is out of range.
+    // Tra cứu tay đua an toàn; bỏ qua hàng nếu id nằm ngoài phạm vi.
     final racers = GameConfig.racers;
     if (entry.key < 0 || entry.key >= racers.length) {
       return const SizedBox.shrink();
@@ -96,7 +96,7 @@ class _BetRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
         children: [
-          // Racer: emoji + name colored with the racer's accent color.
+          // Tay đua: emoji + tên được màu với màu nhấn của tay đua.
           Expanded(
             flex: 4,
             child: Row(
@@ -114,7 +114,7 @@ class _BetRow extends StatelessWidget {
               ],
             ),
           ),
-          // Stake amount — formatMoney keeps currency rendering consistent.
+          // Số tiền cược — formatMoney giữ hiển thị tiền tệ nhất quán.
           Expanded(
             flex: 2,
             child: Text(
@@ -123,7 +123,7 @@ class _BetRow extends StatelessWidget {
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
             ),
           ),
-          // WIN / LOSE badge.
+          // Huy hiệu WIN / LOSE.
           Expanded(
             flex: 2,
             child: Align(

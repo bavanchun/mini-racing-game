@@ -3,25 +3,25 @@ import 'package:flutter/material.dart';
 import '../models/racer.dart';
 import '../theme/app_theme.dart';
 
-/// Renders a single racer's lane: a dirt track with a finish-line marker on
-/// the right and an emoji horse that glides left → right as [progress] rises
-/// from 0.0 (start) to 1.0 (finish line).
+/// Render một làn tay đua đơn: đường đua đất với marker vạch đích ở
+/// bên phải và emoji ngựa trôi trái → phải khi [progress] tăng
+/// từ 0.0 (khởi đầu) đến 1.0 (vạch đích).
 ///
-/// Movement uses [AnimatedPositioned] inside a [Stack] — there is intentionally
-/// no Slider widget here; the "fake slider" pattern is a lab requirement.
+/// Di chuyển sử dụng [AnimatedPositioned] bên trong [Stack] — cố ý
+/// không có widget Slider ở đây; pattern "fake slider" là yêu cầu lab.
 ///
-/// [progress] must be in [0.0, 1.0]. The parent drives updates via setState.
+/// [progress] phải trong [0.0, 1.0]. Parent điều khiển cập nhật qua setState.
 class RaceTrack extends StatelessWidget {
   final Racer racer;
 
-  /// Current position: 0.0 = start gate, 1.0 = finish line.
+  /// Vị trí hiện tại: 0.0 = cổng khởi đầu, 1.0 = vạch đích.
   final double progress;
 
-  /// Whether this racer won (triggers a visual highlight).
+  /// Liệu tay đua này có thắng hay không (kích hoạt highlight thị giác).
   final bool isWinner;
 
-  /// Tick duration — AnimatedPositioned uses this so the horse glides
-  /// smoothly between timer ticks rather than jumping.
+  /// Thời lượng tick — AnimatedPositioned sử dụng cái này để ngựa trôi
+  /// mượt mà giữa các tick timer thay vì nhảy.
   final Duration animationDuration;
 
   static const double _laneHeight = 72.0;
@@ -44,7 +44,7 @@ class RaceTrack extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Racer label row above the track
+          // Hàng nhãn tay đua phía trên đường đua
           Padding(
             padding: const EdgeInsets.only(left: 8.0, bottom: 4.0),
             child: Row(
@@ -80,13 +80,13 @@ class RaceTrack extends StatelessWidget {
               ],
             ),
           ),
-          // The actual lane with moving horse
+          // Làn thực tế với ngựa di chuyển
           LayoutBuilder(
             builder: (context, constraints) {
               final laneWidth = constraints.maxWidth;
-              // Usable travel distance: from left padding to the finish line
-              // left edge. Reserve _sidePadding on the left and _finishWidth on
-              // the right so progress=1.0 lands the horse directly on the flag.
+              // Khoảng cách di chuyển có thể dùng: từ padding trái đến cạnh trái
+              // vạch đích. Dành _sidePadding ở bên trái và _finishWidth ở
+              // bên phải để progress=1.0 đặt ngựa trực tiếp lên cờ.
               final travelWidth =
                   laneWidth - _sidePadding - _finishWidth - _horseSize;
               final horseLeft = _sidePadding + (progress.clamp(0.0, 1.0) * travelWidth);
@@ -111,12 +111,12 @@ class RaceTrack extends StatelessWidget {
                 child: Stack(
                   clipBehavior: Clip.hardEdge,
                   children: [
-                    // Dirt texture: subtle horizontal stripes
+                    // Kết cấu đất: sọc ngang tinh tế
                     Positioned.fill(
                       child: CustomPaint(painter: _DirtStripePainter()),
                     ),
 
-                    // Finish-line checkered column on the far right
+                    // Cột ô vuông vạch đích ở bên phải xa
                     Positioned(
                       right: 0,
                       top: 0,
@@ -125,14 +125,14 @@ class RaceTrack extends StatelessWidget {
                       child: CustomPaint(painter: _CheckeredPainter()),
                     ),
 
-                    // Flag icon on top of finish line
+                    // Icon cờ trên cùng vạch đích
                     Positioned(
                       right: 4,
                       top: 4,
                       child: const Text('🏁', style: TextStyle(fontSize: 16)),
                     ),
 
-                    // Progress fill (colored band behind horse to show distance)
+                    // Điền tiến độ (dải màu phía sau ngựa để hiển thị khoảng cách)
                     AnimatedPositioned(
                       duration: animationDuration,
                       curve: Curves.linear,
@@ -151,7 +151,7 @@ class RaceTrack extends StatelessWidget {
                       ),
                     ),
 
-                    // The horse emoji — this IS the "fake slider thumb"
+                    // Emoji ngựa — đây LÀ "fake slider thumb"
                     AnimatedPositioned(
                       duration: animationDuration,
                       curve: Curves.linear,
@@ -159,8 +159,8 @@ class RaceTrack extends StatelessWidget {
                       top: (_laneHeight - _horseSize) / 2,
                       width: _horseSize,
                       height: _horseSize,
-                      // Semantic label lets screen readers identify which racer
-                      // this glyph represents as it moves across the track.
+                      // Nhãn ngữ nghĩa cho phép screen readers xác định tay đua nào
+                      // glyph này đại diện khi nó di chuyển qua đường đua.
                       child: Semantics(
                         label: racer.name,
                         child: Center(
@@ -182,7 +182,7 @@ class RaceTrack extends StatelessWidget {
   }
 }
 
-/// Paints subtle horizontal stripes to give the dirt track a textured feel.
+/// Vẽ sọc ngang tinh tế để tạo cảm giác kết cấu cho đường đua đất.
 class _DirtStripePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -198,7 +198,7 @@ class _DirtStripePainter extends CustomPainter {
   bool shouldRepaint(_DirtStripePainter old) => false;
 }
 
-/// Paints the classic black-and-white checkered finish column.
+/// Vẽ cột vạch đích ô vuông đen trắng cổ điển.
 class _CheckeredPainter extends CustomPainter {
   static const double _cellSize = 7.0;
 
